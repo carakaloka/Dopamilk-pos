@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOPAMILK POS & Cashier Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            light: '#a7f3d0', 
+                            DEFAULT: '#2dd4bf', 
+                            dark: '#0f766e', 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-card { background: #1e293b; border: 1px solid #334155; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Header / Navigation -->
+    <header class="bg-[#1e293b] border-b border-slate-800 px-6 py-4 flex justify-between items-center z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
+                <i class="fa-solid fa-mug-hot text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-extrabold text-white tracking-wide">DOPAMILK <span class="text-brand text-xs px-2 py-0.5 bg-brand/10 rounded-full ml-1">POS Kasir</span></h1>
+                <p class="text-xs text-slate-400">Outlet: Jl. Kaliurang KM 13.5</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="hidden md:flex flex-col items-end">
+                <span class="text-xs text-slate-400 font-semibold" id="date-display">--</span>
+                <span class="text-sm font-bold text-brand font-mono" id="clock">--:--:--</span>
+            </div>
+            <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+                <button onclick="switchTab('pos')" id="tabPosBtn" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-brand text-slate-900 shadow">Kasir (POS)</button>
+                <button onclick="switchTab('tracker')" id="tabTrackerBtn" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">Tracking & Rekap</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 overflow-hidden relative flex">
+
+        <!-- ================= TAB 1: KASIR (POS) ================= -->
+        <div id="posSection" class="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+            
+            <!-- Menu Produk (Kiri) -->
+            <div class="flex-1 flex flex-col h-full p-6 overflow-hidden border-r border-slate-800 bg-[#0f172a]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Menu Varian Produk</h2>
+                        <p class="text-xs text-slate-400">Pilih produk untuk dimasukkan ke keranjang pesanan.</p>
+                    </div>
+                    <!-- Filter Kategori -->
+                    <div class="flex gap-2 overflow-x-auto pb-2 sm:pb-0" id="categoryFilters">
+                        <button onclick="filterMenu('Semua')" class="cat-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-brand text-slate-900 transition-all">Semua</button>
+                        <button onclick="filterMenu('Reguler')" class="cat-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Reguler</button>
+                        <button onclick="filterMenu('Large')" class="cat-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Large</button>
+                        <button onclick="filterMenu('Susu')" class="cat-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Susu Murni</button>
+                    </div>
+                </div>
+
+                <!-- Grid Produk -->
+                <div class="flex-1 overflow-y-auto pr-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" id="productGrid">
+                        <!-- Render via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keranjang & Checkout (Kanan) -->
+            <div class="w-full md:w-[400px] lg:w-[450px] bg-[#1e293b] flex flex-col h-full border-l border-slate-800 shadow-2xl">
+                <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-brand"></i> Keranjang Pesanan
+                    </h3>
+                    <button onclick="clearCart()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold"><i class="fa-solid fa-trash mr-1"></i> Kosongkan</button>
+                </div>
+
+                <!-- Daftar Item Keranjang -->
+                <div class="flex-1 overflow-y-auto p-5 space-y-3" id="cartItemList">
+                    <div class="h-full flex flex-col items-center justify-center text-slate-500 text-center">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-2 opacity-30"></i>
+                        <p class="text-sm font-medium">Keranjang masih kosong</p>
+                        <p class="text-xs text-slate-600 mt-1">Silakan pilih menu di samping untuk mulai mencatat pesanan.</p>
+                    </div>
+                </div>
+
+                <!-- Ringkasan & Pembayaran -->
+                <div class="p-5 bg-[#0f172a] border-t border-slate-800 space-y-4">
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Subtotal</span>
+                            <span id="subtotalText" class="font-bold text-white">Rp 0</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400">
+                            <span>Metode Pembayaran</span>
+                            <select id="paymentMethod" class="bg-slate-800 text-white text-xs px-2 py-1 rounded border border-slate-700 outline-none">
+                                <option value="Tunai">Tunai (Cash)</option>
+                                <option value="QRIS">QRIS</option>
+                                <option value="GoFood/Grab">GoFood / GrabFood</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-between text-base font-extrabold text-white pt-2 border-t border-slate-800">
+                            <span>Total Tagihan</span>
+                            <span id="grandTotalText" class="text-brand">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <button onclick="processCheckout()" id="checkoutBtn" disabled class="w-full py-3.5 bg-slate-800 text-slate-500 font-bold rounded-xl transition-all cursor-not-allowed shadow-inner flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check-circle"></i> Proses Transaksi & Simpan
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= TAB 2: TRACKING & REKAP HARIAN ================= -->
+        <div id="trackerSection" class="flex-1 flex flex-col h-full overflow-y-auto p-6 bg-[#0f172a] hidden">
+            <div class="max-w-6xl mx-w-full w-full mx-auto space-y-6">
+                
+                <!-- Kartu Ringkasan Hari Ini -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-brand">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Total Omset Hari Ini</p>
+                        <h3 class="text-3xl font-extrabold text-white mt-1" id="trackOmset">Rp 0</h3>
+                    </div>
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-sky-400">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Total Cup Terjual</p>
+                        <h3 class="text-3xl font-extrabold text-sky-400 mt-1" id="trackCups">0 Cup</h3>
+                    </div>
+                    <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-400">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Jumlah Transaksi Sukses</p>
+                        <h3 class="text-3xl font-extrabold text-emerald-400 mt-1" id="trackCount">0 Transaksi</h3>
+                    </div>
+                </div>
+
+                <!-- Tabel Riwayat Transaksi Hari Ini -->
+                <div class="glass-card rounded-2xl overflow-hidden shadow-xl">
+                    <div class="p-5 border-b border-slate-800 flex justify-between items-center bg-[#162032]">
+                        <h3 class="font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-brand"></i> Log Transaksi Harian
+                        </h3>
+                        <button onclick="resetDailyTransactions()" class="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-lg font-bold hover:bg-rose-500 hover:text-white transition-colors">
+                            Reset Data Hari Ini
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="bg-slate-900/50 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-800">
+                                    <th class="py-3 px-5">Waktu</th>
+                                    <th class="py-3 px-4">ID Pesanan</th>
+                                    <th class="py-3 px-4">Rincian Item</th>
+                                    <th class="py-3 px-4">Metode</th>
+                                    <th class="py-3 px-5 text-right">Total Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody" class="divide-y divide-slate-800 text-slate-300">
+                                <!-- Render via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="noTransactionMsg" class="p-12 text-center text-slate-500 italic text-sm">Belum ada transaksi tercatat hari ini.</div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Script POS & Tracking Engine -->
+    <script>
+        // Database Menu Dopamilk
+        const menuProducts = [
+            { id: 1, name: 'Signature Reguler', category: 'Reguler', price: 10000, icon: 'fa-glass-water' },
+            { id: 2, name: 'Signature Large', category: 'Large', price: 12000, icon: 'fa-cup-togo' },
+            { id: 3, name: 'Matcha Mild Large', category: 'Large', price: 20000, icon: 'fa-leaf' },
+            { id: 4, name: 'Matcha Soft Reg', category: 'Reguler', price: 15000, icon: 'fa-seedling' },
+            { id: 5, name: 'Taro Large', category: 'Large', price: 20000, icon: 'fa-ice-cream' },
+            { id: 6, name: 'Original Reguler', category: 'Reguler', price: 9000, icon: 'fa-bottle-droplet' },
+            { id: 7, name: 'Susu Murni Fresh 1L', category: 'Susu', price: 25000, icon: 'fa-cow' },
+            { id: 8, name: 'Susu Pasteurisasi Cup', category: 'Susu', price: 8000, icon: 'fa-mug-hot' },
+        ];
+
+        let cart = [];
+        let dailyTransactions = JSON.parse(localStorage.getItem('dopamilk_pos_transactions')) || [];
+        let activeCategory = 'Semua';
+
+        // Clock & Date
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('id-ID');
+            document.getElementById('date-display').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+        }, 1000);
+
+        function formatRupiah(val) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+        }
+
+        // Render Produk Grid
+        function renderProducts(filter = 'Semua') {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'Semua' ? menuProducts : menuProducts.filter(p => p.category === filter);
+
+            filtered.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-4 rounded-xl flex flex-col justify-between hover:border-brand/50 transition-all cursor-pointer group shadow-sm";
+                card.onclick = () => addToCart(prod.id);
+                card.innerHTML = `
+                    <div>
+                        <div class="w-10 h-10 rounded-lg bg-slate-800 text-brand flex items-center justify-center mb-3 group-hover:bg-brand group-hover:text-slate-900 transition-colors">
+                            <i class="fa-solid ${prod.icon}"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-sm leading-tight group-hover:text-brand transition-colors">${prod.name}</h4>
+                        <span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded inline-block mt-1">${prod.category}</span>
+                    </div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="font-extrabold text-brand text-sm">${formatRupiah(prod.price)}</span>
+                        <span class="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center text-xs group-hover:bg-brand group-hover:text-slate-900 font-bold transition-all">+</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterMenu(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if(btn.innerText.includes(cat)) {
+                    btn.className = "cat-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-brand text-slate-900 transition-all";
+                } else {
+                    btn.className = "cat-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all";
+                }
+            });
+            renderProducts(cat);
+        }
+
+        // Cart Management
+        function addToCart(productId) {
+            const product = menuProducts.find(p => p.id === productId);
+            const existing = cart.find(item => item.id === productId);
+
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function updateQty(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
+        function renderCart() {
+            const listContainer = document.getElementById('cartItemList');
+            const subtotalText = document.getElementById('subtotalText');
+            const grandTotalText = document.getElementById('grandTotalText');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+
+            listContainer.innerHTML = '';
+
+            if (cart.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-slate-500 text-center">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-2 opacity-30"></i>
+                        <p class="text-sm font-medium">Keranjang masih kosong</p>
+                        <p class="text-xs text-slate-600 mt-1">Silakan pilih menu di samping untuk mulai mencatat pesanan.</p>
+                    </div>
+                `;
+                subtotalText.innerText = 'Rp 0';
+                grandTotalText.innerText = 'Rp 0';
+                checkoutBtn.disabled = true;
+                checkoutBtn.className = "w-full py-3.5 bg-slate-800 text-slate-500 font-bold rounded-xl transition-all cursor-not-allowed shadow-inner flex items-center justify-center gap-2";
+                return;
+            }
+
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += item.price * item.qty;
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-slate-900/50 p-3 rounded-xl border border-slate-800/80";
+                row.innerHTML = `
+                    <div class="flex-1 pr-2">
+                        <h5 class="text-xs font-bold text-white">${item.name}</h5>
+                        <p class="text-[11px] text-brand font-semibold mt-0.5">${formatRupiah(item.price)}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700">-</button>
+                        <span class="text-xs font-bold text-white w-5 text-center">${item.qty}</span>
+                        <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 rounded bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700">+</button>
+                    </div>
+                `;
+                listContainer.appendChild(row);
+            });
+
+            subtotalText.innerText = formatRupiah(subtotal);
+            grandTotalText.innerText = formatRupiah(subtotal);
+            checkoutBtn.disabled = false;
+            checkoutBtn.className = "w-full py-3.5 bg-brand hover:bg-brand-dark text-slate-900 font-extrabold rounded-xl transition-all shadow-lg shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer";
+        }
+
+        // Checkout & Tracking Store
+        function processCheckout() {
+            if (cart.length === 0) return;
+
+            const totalAmount = cart.reduce((acc, curr) => acc + (curr.price * curr.qty), 0);
+            const totalCups = cart.reduce((acc, curr) => acc + curr.qty, 0);
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const orderId = 'DOPA-' + Math.floor(1000 + Math.random() * 9000);
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            const summaryItems = cart.map(i => `${i.name} (${i.qty}x)`).join(', ');
+
+            const newTransaction = {
+                id: orderId,
+                time: timeStr,
+                items: summaryItems,
+                method: paymentMethod,
+                cups: totalCups,
+                total: totalAmount
+            };
+
+            dailyTransactions.unshift(newTransaction);
+            localStorage.setItem('dopamilk_pos_transactions', JSON.stringify(dailyTransactions));
+
+            alert(`Transaksi berhasil disimpan!\nID: ${orderId}\nTotal: ${formatRupiah(totalAmount)}`);
+            cart = [];
+            renderCart();
+            updateTracker();
+        }
+
+        // Tracker Dashboard Logic
+        function updateTracker() {
+            const tbody = document.getElementById('transactionTableBody');
+            const noMsg = document.getElementById('noTransactionMsg');
+            const trackOmset = document.getElementById('trackOmset');
+            const trackCups = document.getElementById('trackCups');
+            const trackCount = document.getElementById('trackCount');
+
+            tbody.innerHTML = '';
+
+            if (dailyTransactions.length === 0) {
+                noMsg.classList.remove('hidden');
+                trackOmset.innerText = 'Rp 0';
+                trackCups.innerText = '0 Cup';
+                trackCount.innerText = '0 Transaksi';
+                return;
+            }
+
+            noMsg.classList.add('hidden');
+
+            let totalOmset = 0;
+            let totalCups = 0;
+
+            dailyTransactions.forEach(t => {
+                totalOmset += t.total;
+                totalCups += t.cups;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3.5 px-5 text-xs font-medium text-slate-400">${t.time}</td>
+                    <td class="py-3.5 px-4 font-bold text-white text-xs">${t.id}</td>
+                    <td class="py-3.5 px-4 text-xs text-slate-300 max-w-xs truncate" title="${t.items}">${t.items}</td>
+                    <td class="py-3.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">${t.method}</span></td>
+                    <td class="py-3.5 px-5 text-right font-extrabold text-brand">${formatRupiah(t.total)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            trackOmset.innerText = formatRupiah(totalOmset);
+            trackCups.innerText = totalCups + ' Cup';
+            trackCount.innerText = dailyTransactions.length + ' Transaksi';
+        }
+
+        function resetDailyTransactions() {
+            if (confirm('Hapus seluruh riwayat transaksi hari ini?')) {
+                dailyTransactions = [];
+                localStorage.removeItem('dopamilk_pos_transactions');
+                updateTracker();
+            }
+        }
+
+        // Tab Switcher
+        function switchTab(tab) {
+            const posSec = document.getElementById('posSection');
+            const trackerSec = document.getElementById('trackerSection');
+            const posBtn = document.getElementById('tabPosBtn');
+            const trackerBtn = document.getElementById('tabTrackerBtn');
+
+            if (tab === 'pos') {
+                posSec.classList.remove('hidden');
+                trackerSec.classList.add('hidden');
+                posBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all bg-brand text-slate-900 shadow";
+                trackerBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+            } else {
+                posSec.classList.add('hidden');
+                trackerSec.classList.remove('hidden');
+                trackerBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all bg-brand text-slate-900 shadow";
+                posBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+                updateTracker();
+            }
+        }
+
+        // Inisialisasi awal
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts('Semua');
+            updateTracker();
+        });
+    </script>
+</body>
+</html>
